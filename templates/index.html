@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Image to Text Converter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+  height: 10vh;
+  margin: 0;
+  display: grid;
+  background: #222;
+}
+        .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: stretch;
+        }
+
+        #left-column {
+            background: rgb(0,202,255);
+            flex: 1;
+            margin-right: 20px;
+        }
+
+        #right-column {
+            background: rgb(17, 243, 40);
+            flex: 1;
+            position: relative;
+            height: 520px;
+        }
+
+        #image-upload {
+            text-align: center;
+        }
+
+        #extractedText {
+            white-space: pre-wrap;
+            border: 5px double #333;
+            padding: 10px;
+        }
+
+        #Output {
+            position: absolute;
+            left: 25%;
+            text-align: center;
+        }
+
+        .btn {
+            background-color: DodgerBlue;
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .btn:hover {
+            background-color: RoyalBlue;
+        }
+
+        form {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        #image-upload {
+            margin: 20px;
+        }
+
+        #file-input {
+            border: 2px dashed #aaa;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        #file-input.dragover {
+            background-color: #f0f0f0;
+        }
+
+        #image-upload input[type="submit"] {
+            background-color: DodgerBlue;
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        #image-upload input[type="submit"]:hover {
+            background-color: RoyalBlue;
+        }
+
+
+
+.module-border-wrap {
+margin: auto;
+  max-width: 400px;
+  padding: 1rem;
+  position: relative;
+  background: linear-gradient(to right, red, purple);
+  padding: 3px;
+}
+
+.module {
+  background: #222;
+  color: white;
+  padding: 1rem;
+}
+    </style>
+</head>
+
+<body>
+    <div class="module-border-wrap"><div class="module">
+        <h1>Image to Text Converter</h1>
+        </div></div>
+    <div class="container">
+        <div id="left-column">
+            <h1>Upload Image and Extract Text</h1>
+            <form action="/extract" method="POST" enctype="multipart/form-data" id="image-upload">
+                <label id="file-input" for="file-upload">
+                    <input type="file" name="image" accept="image/*" id="file-upload" style="display:none;">
+                    Drag and drop or click to select an image
+                </label>
+                <input type="submit" value="Extract Text">
+            </form>
+            <h2>Uploaded Image:</h2>
+            <img id="uploadedImage" src="" alt="Uploaded Image" style="max-height: 400px; max-width: 400px;">
+        </div>
+        <div id="right-column">
+            <div id="Output">
+                <h2>Extracted Text:</h2>
+                <pre id="extractedText">The Extracted Text will be Here</pre>
+                <button class="btn" href='/download' onclick="saveTextAsFile()"><i class="fa fa-download"></i> Download</button>
+                <button class="btn" id="catg" href="/"><i class="fa fa-list-alt"></i> Categorization</button><br>
+                <pre id="categoryText"></pre>
+            </div>
+        </div>
+    </div>
+    <script>
+        const fileInput = document.getElementById('file-upload');
+        const fileInputLabel = document.getElementById('file-input');
+
+        fileInputLabel.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileInputLabel.classList.add('dragover');
+        });
+
+        fileInputLabel.addEventListener('dragleave', () => {
+            fileInputLabel.classList.remove('dragover');
+        });
+
+        fileInputLabel.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileInputLabel.classList.remove('dragover');
+
+            const file = e.dataTransfer.files[0];
+            fileInput.files = e.dataTransfer.files;
+
+            // Optionally, you can display the file name or handle the dropped file here
+            console.log('Dropped file:', file.name);
+
+            // Display the dropped image
+            displayImage(file);
+        });
+
+        // Remove the e.preventDefault() here
+        fileInputLabel.addEventListener('click', () => {
+            e.preventDefault();
+            fileInput.click();
+        });
+
+
+
+        document.querySelector('form').addEventListener('submit', function (e) {
+            e.preventDefault(); // Prevent the default form submission
+            var formData = new FormData(this);
+
+            fetch('/extract', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.text())
+                .then(text => {
+                    // Update the extracted text in the <pre> element
+                    document.getElementById('extractedText').textContent = text;
+                });
+        });
+
+        document.querySelector('input[type="file"]').addEventListener('change', function (e) {
+            var uploadedImage = document.getElementById('uploadedImage');
+            var file = e.target.files[0];
+
+            if (file) {
+                uploadedImage.src = URL.createObjectURL(file);
+            } else {
+                uploadedImage.src = "";
+            }
+        });
+
+        // Function to display the image
+        function displayImage(file) {
+            var uploadedImage = document.getElementById('uploadedImage');
+            if (file) {
+                uploadedImage.src = URL.createObjectURL(file);
+            } else {
+                uploadedImage.src = "";
+            }
+        }
+        document.getElementById("catg").addEventListener('click', (e) =>  {
+            e.preventDefault(); // Prevent the default form submission
+
+            fetch('/category')
+                .then(response => response.text())
+                .then(text => {
+                    // Update the extracted text in the <pre> element
+                    document.getElementById('categoryText').textContent = text;
+                });
+        });
+        
+        function saveTextAsFile() {
+            let textToWrite = document.getElementById('extractedText').textContent;
+            if(textToWrite!="The Extracted Text will be Here"){
+                let textFileAsBlob = new Blob([textToWrite], { type: 'text/plain' });
+                let downloadLink = document.createElement('a');
+                downloadLink.download = 'Output Text.txt';
+                downloadLink.innerHTML = 'Download File';
+
+                if (window.webkitURL != null) {
+                    downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
+                } else {
+                    downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+                    downloadLink.style.display = 'none';
+                    document.body.appendChild(downloadLink);
+                }
+                downloadLink.click();
+            }
+            else console.log("The Extracted Text will be Here")
+        }
+    </script>
+</body>
+
+</html>
